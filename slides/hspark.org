@@ -12,19 +12,19 @@
   + [[http://spark.apache.org/][Apache Spark]] inspired
     - Distributed, in-memory computation 
     - Simple DSL to create RDD (Resilient Distributed Data)
-#+begin_src scala
-  // Scala Code
-  val sc = SparkContext ()
-  val lines : RDD = sc.textFile("data.txt")
-  val lineLengths : RDD = lines.map(s => s.length)
-#+end_src
+      #+begin_src scala
+        // Scala Code
+        val sc = SparkContext ()
+        val lines : RDD = sc.textFile("data.txt")
+        val lineLengths : RDD = lines.map(s => s.length)
+      #+end_src
+    - Simple Map-Reduce over networked nodes
 
 * Implementation
 
   + Based on cloud haskell
   + Uses _Static Pointers_ and _Remote Table_ (for polymorphic types)
   + Uses _Closure_ to spawn process on remote node(s)
-
 
 * Stages
  
@@ -85,8 +85,6 @@
   #+RESULTS:
   [[file:rdd.svg]]
 
- 
-
 * RDD - Distributed Data
   + Context gives configuration to run the computation with
     #+begin_src haskell
@@ -95,7 +93,7 @@
                               , _strategy :: Strategy }
 
     #+end_src
-  + Implemented as a set of *Processes* returning set of /Block/. Each block reprsenting chunk of data.
+  + Implemented as a set of *Processes* returning set of /Block/. Each block reprsenting chunk of data residing in a process.
 
     #+begin_src haskell
       class Serializable b => RDD a b where
@@ -147,4 +145,45 @@
 
 
 
-  
+* Process as computation and storage
+
+  + *hspark* spawns process on remote nodes using closure
+  + *hspark* treats process as /computation/ and /storage/
+  + Each process carries out
+    - _Fetching_ - Fetching data from parent process (may locate on same or other machine). 
+    - _Computation_ - Doing actual work.
+    - _Delivery_ - Delivering the computed data to child node.
+
+
+
+* Reduction Step - Shuffling
+
+  + Two step process
+  + Step 1: 
+    + Reduce locally
+    + Hold the data for step 2
+  + Step 2:
+    + Send the partion number to Step 1 processes.
+    + Step 1 process partition localization and deliver subset of data.
+    + Partitioning function should ensure that it achieves independent partitions.
+    + Locally do the reduction step 
+
+
+* Limitations and Future Directions
+  + Though tests work correctly, those needs to be enhanced
+  + Controlling *life* of a process, proliferation of exceptions, and linking up processes.
+  + Avoiding serialization of local node.
+  + Adding backends for holding shuffled data (Hadoop, Mesos etc.)
+
+* References
+
+  + Apache Spark - Original Research Paper from Berkley University
+    - https://www.cs.berkeley.edu/~matei/papers/2012/nsdi_spark.pdf
+  + Mapreduce commentry by Ralf Lammel
+    - http://userpages.uni-koblenz.de/~laemmel/MapReduce/paper.pdf
+  + Distributed Process (Hackage Documentation)
+    - https://hackage.haskell.org/package/distributed-process-0.6.1
+  + Cloud Haskell and Tutorials
+    - http://haskell-distributed.github.io/
+
+
