@@ -1,0 +1,8 @@
+#+STARTUP: hidestars overview
+#+TITLE: Yogesh's Page
+#+AUTHOR: Yogesh Sajanikar
+
+* CS240H
+  + [[./slides/hspark.html][Haskell implementation of Apache Spark]]
+
+
