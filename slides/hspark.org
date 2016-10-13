@@ -8,9 +8,39 @@
 #+OPTIONS: toc:nil
 
 * Overview
-
-  + [[http://spark.apache.org/][Apache Spark]] inspired
+  + hspark is [[http://spark.apache.org/][Apache Spark]] inspired
     - Distributed, in-memory computation 
+    - Simple Map-Reduce over networked nodes
+    - Loosely based
+
+** Agenda
+
+   + Audience - Beginner to Intermediate
+   + Part I - Creating a basic system
+     - Understanding Apache Spark
+     - Existing implementations
+     - Exploring possibilities in Haskell
+     - Evolving a distributed system
+     - Implementation
+   + Part II : Evolving the system
+     - Simplifying specification
+     - Separating tasks and scheduler
+     - Continuation Monad
+     - Scheduler 
+
+** Intention 
+   - Target audience - for Beginner to Intermediate
+   - Understand haskell ecosystem
+
+
+* Understanding Apache Spark
+
+  + Creating complex distributed system is hard
+    - Byzantine failures
+    - Recovery
+    - Fault tolerances
+
+** Simple DSL
     - Simple DSL to create RDD (Resilient Distributed Data)
       #+begin_src scala
         // Scala Code
@@ -18,10 +48,48 @@
         val lines : RDD = sc.textFile("data.txt")
         val lineLengths : RDD = lines.map(s => s.length)
       #+end_src
-    - Simple Map-Reduce over networked nodes
+
+** Advantage of such a system
+   + Complex job can be specified in terms of simple steps
+     #+begin_src scala
+     val sc = SparkContext ()
+     val lines = sc.textFile ("hdfs://...")
+     val errors = lines.filter(_.startsWith("ERROR"))
+     val hdfserrors = errors.filter(_.contains("HDFS"))
+     #+end_src
+
+* Data and its dependencies
+** Direct Dependency
+
+   file:direct-dependency.svg
+
+   - Map 
+     #+begin_src
+     map :: (a -> b) -> [a] -> [b]
+     #+end_src
+
+   - Filter 
+     #+begin_src
+     filter :: (a -> Bool) -> [a] -> [a]
+     #+end_src
+
+  
+** Co-located dependency
+   - Some partitioning is possible
+   - Interdependency only within certain partitions
+
+
+** Wide or Shuffled dependency
+   - Reduce/GroupBy operations
+   - Child partitions *depends* upon almost all parent partitions
+
+
+** 
+
+* Lineage 
+
 
 * Implementation
-
   + Based on cloud haskell
   + Uses _Static Pointers_ and _Remote Table_ (for polymorphic types)
   + Uses _Closure_ to spawn process on remote node(s)
@@ -169,16 +237,31 @@
     + Locally do the reduction step 
 
 
-* Limitations and Future Directions
+* Limitations 
   + Though tests work correctly, those needs to be enhanced
   + Controlling *life* of a process, proliferation of exceptions, and linking up processes.
   + Avoiding serialization of local node.
   + Adding backends for holding shuffled data (Hadoop, Mesos etc.)
 
+
+* Evolving Cloud Haskell Further
+
+  - Separating specifications
+  - Plan, and
+  - Execution
+
+* Continuation Monad
+
+* Monad-Par Library
+
+* Work Stealing Pattern
+
+* Modifiying Monad-Par for distributed 
+
 * References
 
   + Apache Spark - Original Research Paper from Berkley University
-    - https://www.cs.berkeley.edu/~matei/papers/2012/nsdi_spark.pdf
+    - https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf
   + Mapreduce commentry by Ralf Lammel
     - http://userpages.uni-koblenz.de/~laemmel/MapReduce/paper.pdf
   + Distributed Process (Hackage Documentation)
