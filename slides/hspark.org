@@ -11,11 +11,10 @@
   + hspark is [[http://spark.apache.org/][Apache Spark]] inspired
     - Distributed, in-memory computation 
     - Simple Map-Reduce over networked nodes
-    - Loosely based
+    - Loosely based on Spark
 
 ** Agenda
 
-   + Audience - Beginner to Intermediate
    + Part I - Creating a basic system
      - Understanding Apache Spark
      - Existing implementations
@@ -31,6 +30,7 @@
 ** Intention 
    - Target audience - for Beginner to Intermediate
    - Understand haskell ecosystem
+   - Understand challenges 
 
 
 * Understanding Apache Spark
@@ -39,6 +39,8 @@
     - Byzantine failures
     - Recovery
     - Fault tolerances
+  + Almost difficult to get it right first time.
+
 
 ** Simple DSL
     - Simple DSL to create RDD (Resilient Distributed Data)
@@ -58,109 +60,321 @@
      val hdfserrors = errors.filter(_.contains("HDFS"))
      #+end_src
 
+   + Spark is lazy, will not calculate untill forced by 'hdfserrors.cache' or similar means
+
 * Data and its dependencies
 ** Direct Dependency
 
    file:direct-dependency.svg
 
    - Map 
-     #+begin_src
+     #+begin_src haskell
      map :: (a -> b) -> [a] -> [b]
      #+end_src
 
    - Filter 
-     #+begin_src
+     #+begin_src haskell
      filter :: (a -> Bool) -> [a] -> [a]
      #+end_src
 
   
 ** Co-located dependency
+
+   file:co-partitioned-dependency.svg
+
    - Some partitioning is possible
    - Interdependency only within certain partitions
-
+     
 
 ** Wide or Shuffled dependency
+   
+   file:shuffled-dependency.svg
+
    - Reduce/GroupBy operations
    - Child partitions *depends* upon almost all parent partitions
 
-
-** 
-
 * Lineage 
+
+  file:lineage.svg
+
+  - Spark maintains lineage of dependencies
+  - In case, there is a failure, Spark can recreate the data from the lineage. 
+
+* Overall picture
+
+  file:overall.svg
+
+* Existing Systems
+
+** Tweag/Sparkle
+
+   - [[https://github.com/tweag/sparkle][Sparkle - Spark Applications in Haskell]]
+     + https://github.com/tweag/sparkle
+   - http://blog.tweag.io/posts/2016-02-25-hello-sparkle.html
+     + inline-java (Would be interesting to look at)
+     + Wrapped in JAR file
+     + Can submit job with Spark-submit
+
+
+
+** HdPH
+
+   https://hackage.haskell.org/package/hdph
+   + Distributed memory parallelalism
+
+* Implementation (http://haskell-distributed.github.io/)
+  + Based on cloud haskell
+  + Uses _Static Pointers_ and _Remote Table_ (for monomorphic/polymorphic types)
+  + Uses _Closure_ to spawn process on remote node(s)
+
+
+* Static Pointers
+  How can we send data over the wire! 
+
+  - In cloud or distributed computing (both data, as well as functions need to be serialized)
+  - Java/Scala solve the problem by serializing the object with closures
+
+    
+  In Haskell, we can use *Static Pointer*
+
+
+** Static Pointer
+   #+begin_src haskell
+     square :: Int -> Int
+     square x = x * x
+
+     main = do
+       let squareptr :: StaticPtr (Int -> Int)
+           squareptr = static square
+
+       print $ staticPtrInfo squareptr
+       print $ deRefStaticPtr squareptr 10
+   #+end_src
+  
+** Static Pointer Information 
+
+   #+begin_src haskell
+     import GHC.StaticPtr
+
+     staticPtrInfo :: StaticPtr a -> StaticPtrInfo
+     staticPtrInfo = _
+
+     data StaticPtrInfo
+       = StaticPtrInfo { spInfoPackageKey :: String
+                       , spInfoModuleName :: String
+                       , spInfoName :: String
+                       , spInfoSrcLoc :: (Int, Int)
+                       }
+
+     -- Is this safe?
+     deRefStaticPtr :: StaticPtr a -> a
+     deRefStaticPtr = _
+
+     staticKey :: StaticPtr a -> StaticKey
+     staticKey = _
+
+     data Fingerprint = Fingerprint {-# UNPACK #-} !Word64 {-# UNPACK #-} !Word64
+       deriving (Generic, Typeable)
+
+     type StaticKey = FingerPrint
+   #+end_src
+
+** Looking up Static Pointer
+
+   #+begin_src haskell
+     unsafeLookupStaticPtr :: StaticKey -> IO (Maybe (StaticPtr a))
+     unsafeLookupStaticPtr = _
+   #+end_src
+
+   Now it is possible to serialize static pointer through its fingerprint, and recreate at new location. 
+
+** Serializing data and functions
+
+   #+begin_src haskell
+     staticApply :: Static (a -> b) -> Static a -> Static b
+     staticCompose :: Static (b -> c) -> Static (a -> b) -> Static (a -> c)
+   #+end_src
+
+   Given a static representation of a function, we can now compose them together.
+   
+   /We still need to serialize them/
+
+** Closures around Static Pointers
+   #+begin_src haskell
+     data Closure = Closure (!Static(ByteString -> a)) ByteString
+
+     -- Given a decoder and encoded information, build back the data
+     closure :: Static (ByteString -> a) -> ByteString -> Closure a
+   #+end_src
+
+** How about type class constraint
+
+   #+begin_src haskell
+     square :: Num a => a -> a
+     square x = x * x
+   #+end_src
+
+   At the least, we need to serialize data as well.
+   #+begin_src haskell
+
+     import Data.Typeable
+     import Data.Binary
+
+     type Serializable a = (Typeable a, Binary a)
+   #+end_src
+   
+   And we need type classes to help with that, which will be lost along the way.
+
+** Dictionary Trick to help
+   The idea is to embed the type class information in the data.
+
+   #+begin_src haskell
+     data OrderDictionary a where
+       OrdDict :: forall a . Ord a => OrderDictionary a
+   #+end_src
+
+   And add the above dictionary to the argument of the function. 
+   #+begin_src haskell
+     square :: Num a => a -> a
+     square x = x * x
+
+     -- Above will become
+     squareDict :: NumDict a -> a -> a
+     squareDict NumDict = square
+
+     -- where
+     data NumDict a where
+       NumDict :: forall a . Num a => NumDict a
+   #+end_src
+   
+* Nodes, Process, Closure 
+
+  Essential components of distributed haskell
+  
+  file:distributed-overview.svg
+
+** Overview
+
+   - Nodes are logical containers
+   - Processes live in *nodes*
+   - Processes communicate with each other with
+     + Send, receive
+     + Channel (Send port, and receive port)
+
+       
+   Internal STM based machinery is responsible for delivery of messages. 
+
+** Creating processes
+
+   - Creating local processes does not require closures
+     + Indeed, distributed haskell differentiates between local nodes and remote nodes.
+     + *spawnLocal* v/s *spawn*
+   - With closures, it is possible to create a process on a remote node
+  
+
+** Process life cycle 
+
+   file:process-life.svg
+
+   + Essentially a FSM
+   + Distributed-Haskell offers primitives to handle the messages
+   + Also offers linking and monitoring a process to check if process has failed. 
 
 
 * Implementation
-  + Based on cloud haskell
-  + Uses _Static Pointers_ and _Remote Table_ (for polymorphic types)
-  + Uses _Closure_ to spawn process on remote node(s)
 
-* Stages
+  Now that we have basic machinery, we can build the system!
+  
+** Block
+
+   + A *Block* is a specialized process
+   + Block Life cycle
+     - Spawn - Block is live
+     - Store - Either get data from dependent block / or store it exclusively
+     - Expect a /fetch/ request
+     - Send the data back on /fetch/ request
+     - Terminate
+
+
+   #+begin_src haskell
+     newtype Blocks a = Blocks { _blocks :: M.Map Int ProcessId }
+   #+end_src
+
+** Blocks
  
-  - Data is distributed into /Blocks/. /Blocks/ reside on multiple /Nodes/
-  - A /Block/ is a process that _holds_ the data, till it is asked by dependent /Block/
-  - Mapping operations _typically_ evaluate on the same /Node/ 
-  - Reduce causes shuffling
+   - Data is distributed into /Blocks/. /Blocks/ reside on multiple /Nodes/
+   - A /Block/ is a process that _holds_ the data, till it is asked by dependent /Block/
+
+** Overall stages
+   - Mapping operations _typically_ evaluate on the same /Node/ 
+   - Reduce causes shuffling
  
-  #+begin_src dot :file rdd.svg
-    digraph rdd {
-            rankdir = LR
-            ranksep=0.2
-            node [ shape = rectangle ]
-            start [ rank = "source" ]
-            subgraph cluster_1 {
-                    rankdir = LR
-                    d1 [ label = "partition 1", rank = 1 ]
-                    d2 [ label = "partition 2" ]
-                    m1 [ label = "map 1" ]
-                    m2 [ label = "map 2" ]
-                    r1 [ label = "reduce 1" ]
-                    label = "node 1"
-            }
-            subgraph cluster_2 {
-                    rankdir = LR
-                    d3 [ label = "partition 3" ]
-                    d4 [ label = "partition 4" ]
-                    m3 [ label = "map 3" ]
-                    m4 [ label = "map 4" ]
-                    r3 [ label = "reduce 3" ]
-                    r4 [ label = "reduce 4" ]
-                    label = "node 2"
-            }
+   #+begin_src dot :file rdd.svg
+     digraph rdd {
+             rankdir = LR
+             ranksep=0.2
+             node [ shape = rectangle ]
+             start [ rank = "source" ]
+             subgraph cluster_1 {
+                     rankdir = LR
+                     d1 [ label = "partition 1", rank = 1 ]
+                     d2 [ label = "partition 2" ]
+                     m1 [ label = "map 1" ]
+                     m2 [ label = "map 2" ]
+                     r1 [ label = "reduce 1" ]
+                     label = "node 1"
+             }
+             subgraph cluster_2 {
+                     rankdir = LR
+                     d3 [ label = "partition 3" ]
+                     d4 [ label = "partition 4" ]
+                     m3 [ label = "map 3" ]
+                     m4 [ label = "map 4" ]
+                     r3 [ label = "reduce 3" ]
+                     r4 [ label = "reduce 4" ]
+                     label = "node 2"
+             }
 
-            start -> d1 [ label = "Distribute" ]
-            start -> d2
-            start -> d3
-            start -> d4
+             start -> d1 [ label = "Distribute" ]
+             start -> d2
+             start -> d3
+             start -> d4
 
-            d1 -> m1 [label = "map f" ]
-            d2 -> m2
-            d3 -> m3
-            d4 -> m4
+             d1 -> m1 [label = "map f" ]
+             d2 -> m2
+             d3 -> m3
+             d4 -> m4
 
-            m1 -> r1; m1 -> r3
-            m2 -> r1; m2 -> r4
-            m3 -> r3
-            m4 -> r1; m4 -> r4
+             m1 -> r1; m1 -> r3
+             m2 -> r1; m2 -> r4
+             m3 -> r3
+             m4 -> r1; m4 -> r4
             
-            r1 -> end
-            r3 -> end
-            r4 -> end
+             r1 -> end
+             r3 -> end
+             r4 -> end
 
-            end [ label = "collect" ]
-    }
-  #+end_src
+             end [ label = "collect" ]
+     }
+   #+end_src
 
-  #+RESULTS:
-  [[file:rdd.svg]]
+   #+RESULTS:
+   [[file:rdd.svg]]
 
-* RDD - Distributed Data
+* RDD - Context
   + Context gives configuration to run the computation with
     #+begin_src haskell
       data Strategy = Distributed { masterNode :: NodeId, slaveNodes :: [NodeId] }
       data Context  = Context { _lookupTable :: RemoteTable -- Lookup table
                               , _strategy :: Strategy }
-
     #+end_src
+
+  + The main process is launched at master node, the data is also collected back at this node
+  + Slave nodes represents worker nodes where various operations are carried out
+
+* RDD - Definition
+
+  + Type class based implementation
   + Implemented as a set of *Processes* returning set of /Block/. Each block reprsenting chunk of data residing in a process.
 
     #+begin_src haskell
@@ -168,6 +382,9 @@
           -- | Evaluate RDD and return the set of processes representing data 
           flow :: Context -> a b -> Process (Blocks b)
     #+end_src
+
+  + One can look at this definition as /flow/ from RDD to a process holding /blocks/.
+  + Blocks holds information about all /processes/ containing child data
 
 * DSL - Sample 
 
@@ -191,8 +408,101 @@
   /Note: Dictionaries need to be passed for passing qualified type dictionaries/
   a.k.a. "Dict Trick"
 
-* Execution 
+* Seed RDD - embedding data into the system
 
+  #+begin_src haskell
+    data SeedRDD b = SeedRDD { _divisions :: Int
+                             ,_seed :: Closure [b]
+                             ,_dict :: Static (SerializableDict [b] )
+                             }
+
+  #+end_src
+
+* Map RDD 
+  #+begin_src haskell
+    -- | RDD representing a pure map between a base with a function
+    data MapRDD a b c = MapRDD { _baseM :: a b
+                               , _cFunM :: Closure (b -> c)
+                               , _tdict :: Static (SerializableDict [c])
+                               }
+  #+end_src
+
+** Implementation
+   #+begin_src haskell
+     instance (RDD a b, Serializable c) => RDD (MapRDD a b) c where
+
+         flow sc (MapRDD base cfun tdict) = do
+           -- Get the process IDs of the base process
+           (Blocks pmap) <- flow sc base
+
+           -- For each process, try to spawn process on the same node.
+           mpids <- forM (M.toList pmap) $ \(i, pid) -> do
+                       (Just pi) <- getProcessInfo pid
+                       spawn (infoNode pi) (rddMapClosure (rddDictS base) tdict (i, pid)  cfun )
+
+           return $ Blocks $ M.fromList (zip [0..] mpids)
+   #+end_src 
+
+
+* Reduce RDD 
+
+  #+begin_src haskell
+    data ReduceRDD a k v b = ReduceRDD { _baseM :: a (k,v)
+                                       , _cFun  :: Closure (v -> v -> v)
+                                       , _pFun  :: Closure (k -> Int)
+                                       , _tdict :: Static (SerializableDict [(k,v)])
+                                       , _kdict :: Static (OrdDict k)
+                                       }
+  #+end_src
+
+** Reduction Step - Shuffling
+
+   + Two step process
+   + Step 1: 
+     + Reduce locally
+     + Hold the data for step 2
+   + Step 2:
+     + Send the partion number to Step 1 processes.
+     + Step 1 process partition localization and deliver subset of data.
+     + Partitioning function should ensure that it achieves independent partitions.
+     + Locally do the reduction step 
+   
+** Implementation (Stage 1 - Local reduction)
+   #+begin_src haskell
+     flow sc (ReduceRDD base combiner partitioner dictkv dictk) = do
+         say "Starting reduction"
+         -- Get the process IDs of the base process
+         (Blocks pmap) <- flow sc base
+
+         let slaves = slaveNodes . _strategy $ sc
+             p = M.size pmap -- Size of the partitions
+             n = length slaves
+
+         say "Receivd parent blocks from base stage"
+         -- Do two step reduction
+         -- In the first step, do local reduction, i.e. 
+         mpids <- forM (M.toList pmap) $ \(i, pid) -> do
+                     (Just pi) <- getProcessInfo pid
+                     spawn (infoNode pi) (reduceStep1Closure dictk dictkv (p, pid) combiner partitioner)
+
+         say "Reduction stage 1 spawned"
+   #+end_src
+
+** Implementation (Stage 2 - Shuffling)
+   #+begin_src haskell
+             -- For the second step, all the process ids are sent to 
+             let step1pids  = zip [0..] mpids 
+                 slavenodes = zip [0..] (take p $ concat (repeat slaves)) 
+
+             -- for each node now, call the reduction step 2.
+             -- This involves shuffling across the nodes.
+             rpids <- forM slavenodes $ \(i, nid) -> do
+                        spawn nid (reduceStep2Closure dictk dictkv (i, step1pids) combiner)
+
+             return $ Blocks $ M.fromList (zip [0..] rpids)
+   #+end_src
+
+* Execution 
   + Equal distribution among nodes
   + Maps are always localized (Run on the same node where parent process was executed).
   + Execution
@@ -211,8 +521,6 @@
             return $ Blocks $ M.fromList (zip [0..] mpids)
     #+end_src
 
-
-
 * Process as computation and storage
 
   + *hspark* spawns process on remote nodes using closure
@@ -222,41 +530,104 @@
     - _Computation_ - Doing actual work.
     - _Delivery_ - Delivering the computed data to child node.
 
-
-
-* Reduction Step - Shuffling
-
-  + Two step process
-  + Step 1: 
-    + Reduce locally
-    + Hold the data for step 2
-  + Step 2:
-    + Send the partion number to Step 1 processes.
-    + Step 1 process partition localization and deliver subset of data.
-    + Partitioning function should ensure that it achieves independent partitions.
-    + Locally do the reduction step 
-
-
 * Limitations 
-  + Though tests work correctly, those needs to be enhanced
+  + Tests work correctly, those needs to be enhanced
   + Controlling *life* of a process, proliferation of exceptions, and linking up processes.
   + Avoiding serialization of local node.
-  + Adding backends for holding shuffled data (Hadoop, Mesos etc.)
-
 
 * Evolving Cloud Haskell Further
-
   - Separating specifications
   - Plan, and
   - Execution
 
+    
+  /Still under development/
+
 * Continuation Monad
+  Continuation can simply be defined as
+
+  #+begin_src haskell
+    data Continuation a = Continuation { runC ::  (a -> s) -> s }
+
+    pure a = Continuation \c -> c a
+
+    (>>=) :: m a -> (a -> m b) -> m b
+    m >>= k = Continuation $ \c -> runC m $ \a -> runC (k a) c
+  #+end_src
+
+  Essentially, we can compose a way to trace all the steps, and use them for scheduling the tasks
 
 * Monad-Par Library
+  Monad par library uses continuation to specify parallelization, and deterministically compute it.
 
-* Work Stealing Pattern
+  #+begin_src haskell
+    fib n = do
+      i <- new
+      j <- new
+      put i (fib (n-1))
+      put j (fib (n-2))
+      x <- get i
+      y <- get j
+      return x + y
+  #+end_src
 
-* Modifiying Monad-Par for distributed 
+  One can use fork to specify using a different context.
+
+* Specifying process tasks 
+
+  #+begin_src haskell
+    data Plan :: * where
+      Fork :: Plan -> Plan -> Plan
+      Done :: Plan
+      Get  :: (Binary a, Typeable a) => NIVar a -> (AsyncPar a -> Plan) -> Plan
+      Put  :: (Binary a, Typeable a) => NIVar a -> AsyncPar a -> Plan -> Plan
+      New  :: NIVarContents a -> (NIVar a -> Plan) -> Plan
+  #+end_src
+
+* Specifying RDD
+  - Using GADT to specify RDD
+  - This specifies RDD
+
+  #+begin_src haskell
+    data RDD :: * -> * where
+      DataRDD :: Serializable a=> Static (SerializableDict a) -> [[a]] -> RDD a
+      MapRDD :: Closure (a -> b) -> RDD a -> RDD b
+      FilterRDD :: Closure (a -> Bool) -> RDD a -> RDD a
+      ReduceRDD :: Ord k => Closure (k -> v -> v -> u) -> RDD (k, v) -> RDD (k, u)
+  #+end_src
+
+* Convert RDD to Plan (with continuation)
+  #+begin_src haskell
+    rddToPar (DataRDD dict bs) = mapM blockPar bs
+      where
+        blockPar p = do
+          i <- new
+          put i (t p)
+          return i
+  #+end_src
+
+* Scheduler - Plan to Work Stealing Pattern
+  - The plan is executed scheduling processes on different nodes.
+  - Each node runs exactly one process at a time
+  - The data can be held by 'Block' processes
+  - The processes communicate with each other with 'NIVar' which allows sharing the data.  
+
+
+  Basically
+  #+begin_src haskell
+    proc :: a -> Closure (Process b)
+    proc = _
+  
+    -- should be converted into
+    procSpawn :: NIVar a -> Closure (Process (NIVar b))
+    procSpawn = _
+  #+end_src 
+
+  Essentially processes communicating using *NIVar*
+
+* Possible to write custom scheduler
+  - The scheduler is similar to driver
+  - It is possible to detect failures
 
 * References
 

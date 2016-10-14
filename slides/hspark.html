@@ -26,26 +26,79 @@
 <body>
 <div class="reveal">
 <div class="slides">
-<section id="sec-title-slide"><h1 class="title">hspark</h1><h2 class="author">Yogesh Sajanikar</h2><p class="date">Created: 2016-10-13 Thu 23:28</p>
+<section id="sec-title-slide"><h1 class="title">hspark</h1><h2 class="author">Yogesh Sajanikar</h2><p class="date">Created: 2016-10-14 Fri 12:31</p>
 </section>
 
 <section>
 <section id="slide-orgheadline3">
 <h2 id="orgheadline3">Overview</h2>
 <ul>
-<li><a href="http://spark.apache.org/">Apache Spark</a> inspired
+<li>hspark is <a href="http://spark.apache.org/">Apache Spark</a> inspired
 <ul>
 <li>Distributed, in-memory computation</li>
 <li>Simple Map-Reduce over networked nodes</li>
+<li>Loosely based on Spark</li>
 
 </ul></li>
 
 </ul>
 
-
 </section>
 <section id="slide-orgheadline1">
-<h3 id="orgheadline1">Simple DSL</h3>
+<h3 id="orgheadline1">Agenda</h3>
+<ul>
+<li>Part I - Creating a basic system
+<ul>
+<li>Understanding Apache Spark</li>
+<li>Existing implementations</li>
+<li>Exploring possibilities in Haskell</li>
+<li>Evolving a distributed system</li>
+<li>Implementation</li>
+
+</ul></li>
+<li>Part II : Evolving the system
+<ul>
+<li>Simplifying specification</li>
+<li>Separating tasks and scheduler</li>
+<li>Continuation Monad</li>
+<li>Scheduler</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-orgheadline2">
+<h3 id="orgheadline2">Intention</h3>
+<ul>
+<li>Target audience - for Beginner to Intermediate</li>
+<li>Understand haskell ecosystem</li>
+<li>Understand challenges</li>
+
+</ul>
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline6">
+<h2 id="orgheadline6">Understanding Apache Spark</h2>
+<ul>
+<li>Creating complex distributed system is hard
+<ul>
+<li>Byzantine failures</li>
+<li>Recovery</li>
+<li>Fault tolerances</li>
+
+</ul></li>
+<li>Almost difficult to get it right first time.</li>
+
+</ul>
+
+
+</section>
+<section id="slide-orgheadline4">
+<h3 id="orgheadline4">Simple DSL</h3>
 <ul>
 <li><p>
 Simple DSL to create RDD (Resilient Distributed Data)
@@ -62,20 +115,34 @@ Simple DSL to create RDD (Resilient Distributed Data)
 </ul>
 
 </section>
-<section id="slide-orgheadline2">
-<h3 id="orgheadline2">Agenda</h3>
+<section id="slide-orgheadline5">
+<h3 id="orgheadline5">Advantage of such a system</h3>
 <ul>
-<li>Understanding Apache Spark</li>
-<li></li>
+<li><p>
+Complex job can be specified in terms of simple steps
+</p>
+<div class="org-src-container">
+
+<pre  class="src src-scala"><span style="color: #00af00;">val</span> <span style="color: #ff8700;">sc</span> <span style="color: #00af00;">=</span> <span style="color: #1f5bff;">SparkContext</span> ()
+<span style="color: #00af00;">val</span> <span style="color: #ff8700;">lines</span> <span style="color: #00af00;">=</span> sc.textFile (<span style="color: #ff1f8b;">"hdfs://..."</span>)
+<span style="color: #00af00;">val</span> <span style="color: #ff8700;">errors</span> <span style="color: #00af00;">=</span> lines.filter(<span style="color: #00af00;">_</span>.startsWith(<span style="color: #ff1f8b;">"ERROR"</span>))
+<span style="color: #00af00;">val</span> <span style="color: #ff8700;">hdfserrors</span> <span style="color: #00af00;">=</span> errors.filter(<span style="color: #00af00;">_</span>.contains(<span style="color: #ff1f8b;">"HDFS"</span>))
+</pre>
+</div></li>
+
+<li>Spark is lazy, will not calculate untill forced by 'hdfserrors.cache' or similar means</li>
 
 </ul>
-
 
 </section>
 </section>
 <section>
-<section id="slide-orgheadline4">
-<h2 id="orgheadline4">Data and its dependencies</h2>
+<section id="slide-orgheadline10">
+<h2 id="orgheadline10">Data and its dependencies</h2>
+<div class="outline-text-2" id="text-orgheadline10">
+</div></section>
+<section id="slide-orgheadline7">
+<h3 id="orgheadline7">Direct Dependency</h3>
 
 <div class="figure">
 <p><object type="image/svg+xml" data="direct-dependency.svg" >
@@ -83,27 +150,428 @@ Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 
+<ul>
+<li><p>
+Map 
+</p>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">map</span> <span style="color: #ff8700;">::</span> (a <span style="color: #ff8700;">-&gt;</span> b) <span style="color: #ff8700;">-&gt;</span> [a] <span style="color: #ff8700;">-&gt;</span> [b]
+</pre>
+</div></li>
+
+<li><p>
+Filter 
+</p>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">filter</span> <span style="color: #ff8700;">::</span> (a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Bool</span>) <span style="color: #ff8700;">-&gt;</span> [a] <span style="color: #ff8700;">-&gt;</span> [a]
+</pre>
+</div></li>
+
+</ul>
+
 
 </section>
-</section>
-<section>
-<section id="slide-orgheadline5">
-<h2 id="orgheadline5">Implementation</h2>
+<section id="slide-orgheadline8">
+<h3 id="orgheadline8">Co-located dependency</h3>
+
+<div class="figure">
+<p><object type="image/svg+xml" data="co-partitioned-dependency.svg" >
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
 <ul>
-<li>Based on cloud haskell</li>
-<li>Uses <span class="underline">Static Pointers</span> and <span class="underline">Remote Table</span> (for polymorphic types)</li>
-<li>Uses <span class="underline">Closure</span> to spawn process on remote node(s)</li>
+<li>Some partitioning is possible</li>
+<li>Interdependency only within certain partitions</li>
+
+</ul>
+
+
+</section>
+<section id="slide-orgheadline9">
+<h3 id="orgheadline9">Wide or Shuffled dependency</h3>
+
+<div class="figure">
+<p><object type="image/svg+xml" data="shuffled-dependency.svg" >
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<ul>
+<li>Reduce/GroupBy operations</li>
+<li>Child partitions <b>depends</b> upon almost all parent partitions</li>
 
 </ul>
 
 </section>
 </section>
 <section>
-<section id="slide-orgheadline6">
-<h2 id="orgheadline6">Stages</h2>
+<section id="slide-orgheadline11">
+<h2 id="orgheadline11">Lineage</h2>
+
+<div class="figure">
+<p><object type="image/svg+xml" data="lineage.svg" >
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<ul>
+<li>Spark maintains lineage of dependencies</li>
+<li>In case, there is a failure, Spark can recreate the data from the lineage.</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline12">
+<h2 id="orgheadline12">Overall picture</h2>
+
+<div class="figure">
+<p><object type="image/svg+xml" data="overall.svg" >
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline15">
+<h2 id="orgheadline15">Existing Systems</h2>
+<div class="outline-text-2" id="text-orgheadline15">
+</div></section>
+<section id="slide-orgheadline13">
+<h3 id="orgheadline13">Tweag/Sparkle</h3>
+<ul>
+<li><a href="https://github.com/tweag/sparkle">Sparkle - Spark Applications in Haskell</a>
+<ul>
+<li><a href="https://github.com/tweag/sparkle">https://github.com/tweag/sparkle</a></li>
+
+</ul></li>
+<li><a href="http://blog.tweag.io/posts/2016-02-25-hello-sparkle.html">http://blog.tweag.io/posts/2016-02-25-hello-sparkle.html</a>
+<ul>
+<li>inline-java (Would be interesting to look at)</li>
+<li>Wrapped in JAR file</li>
+<li>Can submit job with Spark-submit</li>
+
+</ul></li>
+
+</ul>
+
+
+
+</section>
+<section id="slide-orgheadline14">
+<h3 id="orgheadline14">HdPH</h3>
+<p>
+<a href="https://hackage.haskell.org/package/hdph">https://hackage.haskell.org/package/hdph</a>
+</p>
+<ul>
+<li>Distributed memory parallelalism</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline16">
+<h2 id="orgheadline16">Implementation (<a href="http://haskell-distributed.github.io/">http://haskell-distributed.github.io/</a>)</h2>
+<ul>
+<li>Based on cloud haskell</li>
+<li>Uses <span class="underline">Static Pointers</span> and <span class="underline">Remote Table</span> (for monomorphic/polymorphic types)</li>
+<li>Uses <span class="underline">Closure</span> to spawn process on remote node(s)</li>
+
+</ul>
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline24">
+<h2 id="orgheadline24">Static Pointers</h2>
+<p>
+How can we send data over the wire! 
+</p>
+
+<ul>
+<li>In cloud or distributed computing (both data, as well as functions need to be serialized)</li>
+<li>Java/Scala solve the problem by serializing the object with closures</li>
+
+</ul>
+
+
+<p>
+In Haskell, we can use <b>Static Pointer</b>
+</p>
+
+
+</section>
+<section id="slide-orgheadline17">
+<h3 id="orgheadline17">Static Pointer</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">square</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Int</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Int</span>
+<span style="color: #ef2929;">square</span> x <span style="color: #ff8700;">=</span> x <span style="color: #ff8700;">*</span> x
+
+<span style="color: #ef2929;">main</span> <span style="color: #ff8700;">=</span> <span style="color: #00af00;">do</span>
+  <span style="color: #00af00;">let</span> squareptr <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">StaticPtr</span> (<span style="color: #18b2b2;">Int</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Int</span>)
+      squareptr <span style="color: #ff8700;">=</span> static square
+
+  print <span style="color: #ff8700;">$</span> staticPtrInfo squareptr
+  print <span style="color: #ff8700;">$</span> deRefStaticPtr squareptr 10
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline18">
+<h3 id="orgheadline18">Static Pointer Information</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">import</span> <span style="color: #18b2b2;">GHC.StaticPtr</span>
+
+<span style="color: #ef2929;">staticPtrInfo</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">StaticPtr</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">StaticPtrInfo</span>
+<span style="color: #ef2929;">staticPtrInfo</span> <span style="color: #ff8700;">=</span> <span style="color: #00af00;">_</span>
+
+<span style="color: #00af00;">data</span> <span style="color: #18b2b2;">StaticPtrInfo</span>
+  <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">StaticPtrInfo</span> { spInfoPackageKey <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">String</span>
+                  , spInfoModuleName <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">String</span>
+                  , spInfoName <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">String</span>
+                  , spInfoSrcLoc <span style="color: #ff8700;">::</span> (<span style="color: #18b2b2;">Int</span>, <span style="color: #18b2b2;">Int</span>)
+                  }
+
+<span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">Is this safe?</span>
+<span style="color: #ef2929;">deRefStaticPtr</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">StaticPtr</span> a <span style="color: #ff8700;">-&gt;</span> a
+<span style="color: #ef2929;">deRefStaticPtr</span> <span style="color: #ff8700;">=</span> <span style="color: #00af00;">_</span>
+
+<span style="color: #ef2929;">staticKey</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">StaticPtr</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">StaticKey</span>
+<span style="color: #ef2929;">staticKey</span> <span style="color: #ff8700;">=</span> <span style="color: #00af00;">_</span>
+
+<span style="color: #00af00;">data</span> <span style="color: #18b2b2;">Fingerprint</span> <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">Fingerprint</span> <span style="color: #b218b2;">{-# UNPACK #-}</span> <span style="color: #ff8700;">!</span><span style="color: #18b2b2;">Word64</span> <span style="color: #b218b2;">{-# UNPACK #-}</span> <span style="color: #ff8700;">!</span><span style="color: #18b2b2;">Word64</span>
+  <span style="color: #00af00;">deriving</span> (<span style="color: #18b2b2;">Generic</span>, <span style="color: #18b2b2;">Typeable</span>)
+
+<span style="color: #00af00;">type</span> <span style="color: #18b2b2;">StaticKey</span> <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">FingerPrint</span>
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline19">
+<h3 id="orgheadline19">Looking up Static Pointer</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">unsafeLookupStaticPtr</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">StaticKey</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">IO</span> (<span style="color: #18b2b2;">Maybe</span> (<span style="color: #18b2b2;">StaticPtr</span> a))
+<span style="color: #ef2929;">unsafeLookupStaticPtr</span> <span style="color: #ff8700;">=</span> <span style="color: #00af00;">_</span>
+</pre>
+</div>
+
+<p>
+Now it is possible to serialize static pointer through its fingerprint, and recreate at new location. 
+</p>
+
+</section>
+<section id="slide-orgheadline20">
+<h3 id="orgheadline20">Serializing data and functions</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">staticApply</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Static</span> (a <span style="color: #ff8700;">-&gt;</span> b) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Static</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Static</span> b
+<span style="color: #ef2929;">staticCompose</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Static</span> (b <span style="color: #ff8700;">-&gt;</span> c) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Static</span> (a <span style="color: #ff8700;">-&gt;</span> b) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Static</span> (a <span style="color: #ff8700;">-&gt;</span> c)
+</pre>
+</div>
+
+<p>
+Given a static representation of a function, we can now compose them together.
+</p>
+
+<p>
+<i>We still need to serialize them</i>
+</p>
+
+</section>
+<section id="slide-orgheadline21">
+<h3 id="orgheadline21">Closures around Static Pointers</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">Closure</span> <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">Closure</span> (<span style="color: #ff8700;">!</span><span style="color: #18b2b2;">Static</span>(<span style="color: #18b2b2;">ByteString</span> <span style="color: #ff8700;">-&gt;</span> a)) <span style="color: #18b2b2;">ByteString</span>
+
+<span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">Given a decoder and encoded information, build back the data</span>
+<span style="color: #ef2929;">closure</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Static</span> (<span style="color: #18b2b2;">ByteString</span> <span style="color: #ff8700;">-&gt;</span> a) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">ByteString</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Closure</span> a
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline22">
+<h3 id="orgheadline22">How about type class constraint</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">square</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Num</span> a <span style="color: #ff8700;">=&gt;</span> a <span style="color: #ff8700;">-&gt;</span> a
+<span style="color: #ef2929;">square</span> x <span style="color: #ff8700;">=</span> x <span style="color: #ff8700;">*</span> x
+</pre>
+</div>
+
+<p>
+At the least, we need to serialize data as well.
+</p>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">import</span> <span style="color: #18b2b2;">Data.Typeable</span>
+<span style="color: #00af00;">import</span> <span style="color: #18b2b2;">Data.Binary</span>
+
+<span style="color: #00af00;">type</span> <span style="color: #18b2b2;">Serializable</span> a <span style="color: #ff8700;">=</span> (<span style="color: #18b2b2;">Typeable</span> a, <span style="color: #18b2b2;">Binary</span> a)
+</pre>
+</div>
+
+<p>
+And we need type classes to help with that, which will be lost along the way.
+</p>
+
+</section>
+<section id="slide-orgheadline23">
+<h3 id="orgheadline23">Dictionary Trick to help</h3>
+<p>
+The idea is to embed the type class information in the data.
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">OrderDictionary</span> a <span style="color: #00af00;">where</span>
+  <span style="color: #18b2b2;">OrdDict</span> <span style="color: #ff8700;">::</span> forall a <span style="color: #ff8700;">.</span> <span style="color: #18b2b2;">Ord</span> a <span style="color: #ff8700;">=&gt;</span> <span style="color: #18b2b2;">OrderDictionary</span> a
+</pre>
+</div>
+
+<p>
+And add the above dictionary to the argument of the function. 
+</p>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">square</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Num</span> a <span style="color: #ff8700;">=&gt;</span> a <span style="color: #ff8700;">-&gt;</span> a
+<span style="color: #ef2929;">square</span> x <span style="color: #ff8700;">=</span> x <span style="color: #ff8700;">*</span> x
+
+<span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">Above will become</span>
+<span style="color: #ef2929;">squareDict</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">NumDict</span> a <span style="color: #ff8700;">-&gt;</span> a <span style="color: #ff8700;">-&gt;</span> a
+<span style="color: #ef2929;">squareDict</span> <span style="color: #18b2b2;">NumDict</span> <span style="color: #ff8700;">=</span> square
+
+<span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">where</span>
+<span style="color: #00af00;">data</span> <span style="color: #18b2b2;">NumDict</span> a <span style="color: #00af00;">where</span>
+  <span style="color: #18b2b2;">NumDict</span> <span style="color: #ff8700;">::</span> forall a <span style="color: #ff8700;">.</span> <span style="color: #18b2b2;">Num</span> a <span style="color: #ff8700;">=&gt;</span> <span style="color: #18b2b2;">NumDict</span> a
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline28">
+<h2 id="orgheadline28">Nodes, Process, Closure</h2>
+<p>
+Essential components of distributed haskell
+</p>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="distributed-overview.svg" >
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+</section>
+<section id="slide-orgheadline25">
+<h3 id="orgheadline25">Overview</h3>
+<ul>
+<li>Nodes are logical containers</li>
+<li>Processes live in <b>nodes</b></li>
+<li>Processes communicate with each other with
+<ul>
+<li>Send, receive</li>
+<li>Channel (Send port, and receive port)</li>
+
+</ul></li>
+
+</ul>
+
+
+<p>
+Internal STM based machinery is responsible for delivery of messages. 
+</p>
+
+</section>
+<section id="slide-orgheadline26">
+<h3 id="orgheadline26">Creating processes</h3>
+<ul>
+<li>Creating local processes does not require closures
+<ul>
+<li>Indeed, distributed haskell differentiates between local nodes and remote nodes.</li>
+<li><b>spawnLocal</b> v/s <b>spawn</b></li>
+
+</ul></li>
+<li>With closures, it is possible to create a process on a remote node</li>
+
+</ul>
+
+
+</section>
+<section id="slide-orgheadline27">
+<h3 id="orgheadline27">Process life cycle</h3>
+
+<div class="figure">
+<p><object type="image/svg+xml" data="process-life.svg" >
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<ul>
+<li>Essentially a FSM</li>
+<li>Distributed-Haskell offers primitives to handle the messages</li>
+<li>Also offers linking and monitoring a process to check if process has failed.</li>
+
+</ul>
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline32">
+<h2 id="orgheadline32">Implementation</h2>
+<p>
+Now that we have basic machinery, we can build the system!
+</p>
+
+</section>
+<section id="slide-orgheadline29">
+<h3 id="orgheadline29">Block</h3>
+<ul>
+<li>A <b>Block</b> is a specialized process</li>
+<li>Block Life cycle
+<ul>
+<li>Spawn - Block is live</li>
+<li>Store - Either get data from dependent block / or store it exclusively</li>
+<li>Expect a <i>fetch</i> request</li>
+<li>Send the data back on <i>fetch</i> request</li>
+<li>Terminate</li>
+
+</ul></li>
+
+</ul>
+
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">newtype</span> <span style="color: #18b2b2;">Blocks</span> a <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">Blocks</span> { _blocks <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">M.Map</span> <span style="color: #18b2b2;">Int</span> <span style="color: #18b2b2;">ProcessId</span> }
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline30">
+<h3 id="orgheadline30">Blocks</h3>
 <ul>
 <li>Data is distributed into <i>Blocks</i>. <i>Blocks</i> reside on multiple <i>Nodes</i></li>
 <li>A <i>Block</i> is a process that <span class="underline">holds</span> the data, till it is asked by dependent <i>Block</i></li>
+
+</ul>
+
+</section>
+<section id="slide-orgheadline31">
+<h3 id="orgheadline31">Overall stages</h3>
+<ul>
 <li>Mapping operations <span class="underline">typically</span> evaluate on the same <i>Node</i></li>
 <li>Reduce causes shuffling</li>
 
@@ -119,8 +587,8 @@ Sorry, your browser does not support SVG.</object>
 </section>
 </section>
 <section>
-<section id="slide-orgheadline7">
-<h2 id="orgheadline7">RDD - Distributed Data</h2>
+<section id="slide-orgheadline33">
+<h2 id="orgheadline33">RDD - Context</h2>
 <ul>
 <li><p>
 Context gives configuration to run the computation with
@@ -132,6 +600,19 @@ Context gives configuration to run the computation with
                         , _strategy <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Strategy</span> }
 </pre>
 </div></li>
+
+<li>The main process is launched at master node, the data is also collected back at this node</li>
+<li>Slave nodes represents worker nodes where various operations are carried out</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline34">
+<h2 id="orgheadline34">RDD - Definition</h2>
+<ul>
+<li>Type class based implementation</li>
 <li><p>
 Implemented as a set of <b>Processes</b> returning set of <i>Block</i>. Each block reprsenting chunk of data residing in a process.
 </p>
@@ -144,13 +625,16 @@ Implemented as a set of <b>Processes</b> returning set of <i>Block</i>. Each blo
 </pre>
 </div></li>
 
+<li>One can look at this definition as <i>flow</i> from RDD to a process holding <i>blocks</i>.</li>
+<li>Blocks holds information about all <i>processes</i> containing child data</li>
+
 </ul>
 
 </section>
 </section>
 <section>
-<section id="slide-orgheadline8">
-<h2 id="orgheadline8">DSL - Sample</h2>
+<section id="slide-orgheadline35">
+<h2 id="orgheadline35">DSL - Sample</h2>
 <div class="org-src-container">
 
 <pre  class="src src-haskell">sc <span style="color: #ff8700;">&lt;-</span> createContextFrom remoteTable master slaves
@@ -177,8 +661,139 @@ a.k.a. "Dict Trick"
 </section>
 </section>
 <section>
-<section id="slide-orgheadline9">
-<h2 id="orgheadline9">Execution</h2>
+<section id="slide-orgheadline36">
+<h2 id="orgheadline36">Seed RDD - embedding data into the system</h2>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">SeedRDD</span> b <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">SeedRDD</span> { _divisions <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Int</span>
+                         ,_seed <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Closure</span> [b]
+                         ,_dict <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Static</span> (<span style="color: #18b2b2;">SerializableDict</span> [b] )
+                         }
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline38">
+<h2 id="orgheadline38">Map RDD</h2>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #cc0000;">-- | RDD representing a pure map between a base with a function</span>
+<span style="color: #00af00;">data</span> <span style="color: #18b2b2;">MapRDD</span> a b c <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">MapRDD</span> { _baseM <span style="color: #ff8700;">::</span> a b
+                           , _cFunM <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Closure</span> (b <span style="color: #ff8700;">-&gt;</span> c)
+                           , _tdict <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Static</span> (<span style="color: #18b2b2;">SerializableDict</span> [c])
+                           }
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline37">
+<h3 id="orgheadline37">Implementation</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">instance</span> (<span style="color: #18b2b2;">RDD</span> a b, <span style="color: #18b2b2;">Serializable</span> c) <span style="color: #ff8700;">=&gt;</span> <span style="color: #18b2b2;">RDD</span> (<span style="color: #18b2b2;">MapRDD</span> a b) c <span style="color: #00af00;">where</span>
+
+    flow sc (<span style="color: #18b2b2;">MapRDD</span> base cfun tdict) <span style="color: #ff8700;">=</span> <span style="color: #00af00;">do</span>
+      <span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">Get the process IDs of the base process</span>
+      (<span style="color: #18b2b2;">Blocks</span> pmap) <span style="color: #ff8700;">&lt;-</span> flow sc base
+
+      <span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">For each process, try to spawn process on the same node.</span>
+      mpids <span style="color: #ff8700;">&lt;-</span> forM (M.toList pmap) <span style="color: #ff8700;">$</span> <span style="color: #ff8700;">\</span>(i, pid) <span style="color: #ff8700;">-&gt;</span> <span style="color: #00af00;">do</span>
+                  (<span style="color: #18b2b2;">Just</span> pi) <span style="color: #ff8700;">&lt;-</span> getProcessInfo pid
+                  spawn (infoNode pi) (rddMapClosure (rddDictS base) tdict (i, pid)  cfun )
+
+      return <span style="color: #ff8700;">$</span> <span style="color: #18b2b2;">Blocks</span> <span style="color: #ff8700;">$</span> M.fromList (zip [0<span style="color: #ff8700;">..</span>] mpids)
+</pre>
+</div>
+
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline42">
+<h2 id="orgheadline42">Reduce RDD</h2>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">ReduceRDD</span> a k v b <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">ReduceRDD</span> { _baseM <span style="color: #ff8700;">::</span> a (k,v)
+                                   , _cFun  <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Closure</span> (v <span style="color: #ff8700;">-&gt;</span> v <span style="color: #ff8700;">-&gt;</span> v)
+                                   , _pFun  <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Closure</span> (k <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Int</span>)
+                                   , _tdict <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Static</span> (<span style="color: #18b2b2;">SerializableDict</span> [(k,v)])
+                                   , _kdict <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Static</span> (<span style="color: #18b2b2;">OrdDict</span> k)
+                                   }
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline39">
+<h3 id="orgheadline39">Reduction Step - Shuffling</h3>
+<ul>
+<li>Two step process</li>
+<li>Step 1: 
+<ul>
+<li>Reduce locally</li>
+<li>Hold the data for step 2</li>
+
+</ul></li>
+<li>Step 2:
+<ul>
+<li>Send the partion number to Step 1 processes.</li>
+<li>Step 1 process partition localization and deliver subset of data.</li>
+<li>Partitioning function should ensure that it achieves independent partitions.</li>
+<li>Locally do the reduction step</li>
+
+</ul></li>
+
+</ul>
+
+</section>
+<section id="slide-orgheadline40">
+<h3 id="orgheadline40">Implementation (Stage 1 - Local reduction)</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">flow</span> sc (<span style="color: #18b2b2;">ReduceRDD</span> base combiner partitioner dictkv dictk) <span style="color: #ff8700;">=</span> <span style="color: #00af00;">do</span>
+    say <span style="color: #ff1f8b;">"Starting reduction"</span>
+    <span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">Get the process IDs of the base process</span>
+    (<span style="color: #18b2b2;">Blocks</span> pmap) <span style="color: #ff8700;">&lt;-</span> flow sc base
+
+    <span style="color: #00af00;">let</span> slaves <span style="color: #ff8700;">=</span> slaveNodes <span style="color: #ff8700;">.</span> _strategy <span style="color: #ff8700;">$</span> sc
+        p <span style="color: #ff8700;">=</span> M.size pmap <span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">Size of the partitions</span>
+        n <span style="color: #ff8700;">=</span> length slaves
+
+    say <span style="color: #ff1f8b;">"Receivd parent blocks from base stage"</span>
+    <span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">Do two step reduction</span>
+    <span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">In the first step, do local reduction, i.e. </span>
+    mpids <span style="color: #ff8700;">&lt;-</span> forM (M.toList pmap) <span style="color: #ff8700;">$</span> <span style="color: #ff8700;">\</span>(i, pid) <span style="color: #ff8700;">-&gt;</span> <span style="color: #00af00;">do</span>
+                (<span style="color: #18b2b2;">Just</span> pi) <span style="color: #ff8700;">&lt;-</span> getProcessInfo pid
+                spawn (infoNode pi) (reduceStep1Closure dictk dictkv (p, pid) combiner partitioner)
+
+    say <span style="color: #ff1f8b;">"Reduction stage 1 spawned"</span>
+</pre>
+</div>
+
+</section>
+<section id="slide-orgheadline41">
+<h3 id="orgheadline41">Implementation (Stage 2 - Shuffling)</h3>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">For the second step, all the process ids are sent to </span>
+<span style="color: #00af00;">let</span> step1pids  <span style="color: #ff8700;">=</span> zip [0<span style="color: #ff8700;">..</span>] mpids 
+    slavenodes <span style="color: #ff8700;">=</span> zip [0<span style="color: #ff8700;">..</span>] (take p <span style="color: #ff8700;">$</span> concat (repeat slaves)) 
+
+<span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">for each node now, call the reduction step 2.</span>
+<span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">This involves shuffling across the nodes.</span>
+rpids <span style="color: #ff8700;">&lt;-</span> forM slavenodes <span style="color: #ff8700;">$</span> <span style="color: #ff8700;">\</span>(i, nid) <span style="color: #ff8700;">-&gt;</span> <span style="color: #00af00;">do</span>
+           spawn nid (reduceStep2Closure dictk dictkv (i, step1pids) combiner)
+
+return <span style="color: #ef2929;">$</span> <span style="color: #18b2b2;">Blocks</span> <span style="color: #ff8700;">$</span> M.fromList (zip [0<span style="color: #ff8700;">..</span>] rpids)
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline43">
+<h2 id="orgheadline43">Execution</h2>
 <ul>
 <li>Equal distribution among nodes</li>
 <li>Maps are always localized (Run on the same node where parent process was executed).</li>
@@ -204,13 +819,11 @@ Execution
 
 </ul>
 
-
-
 </section>
 </section>
 <section>
-<section id="slide-orgheadline10">
-<h2 id="orgheadline10">Process as computation and storage</h2>
+<section id="slide-orgheadline44">
+<h2 id="orgheadline44">Process as computation and storage</h2>
 <ul>
 <li><b>hspark</b> spawns process on remote nodes using closure</li>
 <li><b>hspark</b> treats process as <i>computation</i> and <i>storage</i></li>
@@ -224,51 +837,186 @@ Execution
 
 </ul>
 
-
-
 </section>
 </section>
 <section>
-<section id="slide-orgheadline11">
-<h2 id="orgheadline11">Reduction Step - Shuffling</h2>
+<section id="slide-orgheadline45">
+<h2 id="orgheadline45">Limitations</h2>
 <ul>
-<li>Two step process</li>
-<li>Step 1: 
-<ul>
-<li>Reduce locally</li>
-<li>Hold the data for step 2</li>
-
-</ul></li>
-<li>Step 2:
-<ul>
-<li>Send the partion number to Step 1 processes.</li>
-<li>Step 1 process partition localization and deliver subset of data.</li>
-<li>Partitioning function should ensure that it achieves independent partitions.</li>
-<li>Locally do the reduction step</li>
-
-</ul></li>
-
-</ul>
-
-
-</section>
-</section>
-<section>
-<section id="slide-orgheadline12">
-<h2 id="orgheadline12">Limitations and Future Directions</h2>
-<ul>
-<li>Though tests work correctly, those needs to be enhanced</li>
+<li>Tests work correctly, those needs to be enhanced</li>
 <li>Controlling <b>life</b> of a process, proliferation of exceptions, and linking up processes.</li>
 <li>Avoiding serialization of local node.</li>
-<li>Adding backends for holding shuffled data (Hadoop, Mesos etc.)</li>
 
 </ul>
 
 </section>
 </section>
 <section>
-<section id="slide-orgheadline13">
-<h2 id="orgheadline13">References</h2>
+<section id="slide-orgheadline46">
+<h2 id="orgheadline46">Evolving Cloud Haskell Further</h2>
+<ul>
+<li>Separating specifications</li>
+<li>Plan, and</li>
+<li>Execution</li>
+
+</ul>
+
+
+<p>
+<i>Still under development</i>
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline47">
+<h2 id="orgheadline47">Continuation Monad</h2>
+<p>
+Continuation can simply be defined as
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">Continuation</span> a <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">Continuation</span> { runC <span style="color: #ff8700;">::</span>  (a <span style="color: #ff8700;">-&gt;</span> s) <span style="color: #ff8700;">-&gt;</span> s }
+
+<span style="color: #ef2929;">pure</span> a <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">Continuation</span> <span style="color: #ff8700;">\</span>c <span style="color: #ff8700;">-&gt;</span> c a
+
+(<span style="color: #ef2929;">&gt;&gt;=</span>) <span style="color: #ff8700;">::</span> m a <span style="color: #ff8700;">-&gt;</span> (a <span style="color: #ff8700;">-&gt;</span> m b) <span style="color: #ff8700;">-&gt;</span> m b
+m <span style="color: #ef2929;">&gt;&gt;=</span> k <span style="color: #ff8700;">=</span> <span style="color: #18b2b2;">Continuation</span> <span style="color: #ff8700;">$</span> <span style="color: #ff8700;">\</span>c <span style="color: #ff8700;">-&gt;</span> runC m <span style="color: #ff8700;">$</span> <span style="color: #ff8700;">\</span>a <span style="color: #ff8700;">-&gt;</span> runC (k a) c
+</pre>
+</div>
+
+<p>
+Essentially, we can compose a way to trace all the steps, and use them for scheduling the tasks
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline48">
+<h2 id="orgheadline48">Monad-Par Library</h2>
+<p>
+Monad par library uses continuation to specify parallelization, and deterministically compute it.
+</p>
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">fib</span> n <span style="color: #ff8700;">=</span> <span style="color: #00af00;">do</span>
+  i <span style="color: #ff8700;">&lt;-</span> new
+  j <span style="color: #ff8700;">&lt;-</span> new
+  put i (fib (n<span style="color: #ff8700;">-</span>1))
+  put j (fib (n<span style="color: #ff8700;">-</span>2))
+  x <span style="color: #ff8700;">&lt;-</span> get i
+  y <span style="color: #ff8700;">&lt;-</span> get j
+  return x <span style="color: #ff8700;">+</span> y
+</pre>
+</div>
+
+<p>
+One can use fork to specify using a different context.
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline49">
+<h2 id="orgheadline49">Specifying process tasks</h2>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">Plan</span> <span style="color: #ff8700;">::</span> <span style="color: #ff8700;">*</span> <span style="color: #00af00;">where</span>
+  <span style="color: #18b2b2;">Fork</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Plan</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span>
+  <span style="color: #18b2b2;">Done</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Plan</span>
+  <span style="color: #18b2b2;">Get</span>  <span style="color: #ff8700;">::</span> (<span style="color: #18b2b2;">Binary</span> a, <span style="color: #18b2b2;">Typeable</span> a) <span style="color: #ff8700;">=&gt;</span> <span style="color: #18b2b2;">NIVar</span> a <span style="color: #ff8700;">-&gt;</span> (<span style="color: #18b2b2;">AsyncPar</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span>) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span>
+  <span style="color: #18b2b2;">Put</span>  <span style="color: #ff8700;">::</span> (<span style="color: #18b2b2;">Binary</span> a, <span style="color: #18b2b2;">Typeable</span> a) <span style="color: #ff8700;">=&gt;</span> <span style="color: #18b2b2;">NIVar</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">AsyncPar</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span>
+  <span style="color: #18b2b2;">New</span>  <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">NIVarContents</span> a <span style="color: #ff8700;">-&gt;</span> (<span style="color: #18b2b2;">NIVar</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span>) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span>
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline50">
+<h2 id="orgheadline50">Specifying RDD</h2>
+<ul>
+<li>Using GADT to specify RDD</li>
+<li>This specifies RDD</li>
+
+</ul>
+
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">RDD</span> <span style="color: #ff8700;">::</span> <span style="color: #ff8700;">*</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #ff8700;">*</span> <span style="color: #00af00;">where</span>
+  <span style="color: #18b2b2;">DataRDD</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Serializable</span> a<span style="color: #ff8700;">=&gt;</span> <span style="color: #18b2b2;">Static</span> (<span style="color: #18b2b2;">SerializableDict</span> a) <span style="color: #ff8700;">-&gt;</span> [[a]] <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">RDD</span> a
+  <span style="color: #18b2b2;">MapRDD</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Closure</span> (a <span style="color: #ff8700;">-&gt;</span> b) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">RDD</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">RDD</span> b
+  <span style="color: #18b2b2;">FilterRDD</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Closure</span> (a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Bool</span>) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">RDD</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">RDD</span> a
+  <span style="color: #18b2b2;">ReduceRDD</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Ord</span> k <span style="color: #ff8700;">=&gt;</span> <span style="color: #18b2b2;">Closure</span> (k <span style="color: #ff8700;">-&gt;</span> v <span style="color: #ff8700;">-&gt;</span> v <span style="color: #ff8700;">-&gt;</span> u) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">RDD</span> (k, v) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">RDD</span> (k, u)
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline51">
+<h2 id="orgheadline51">Convert RDD to Plan (with continuation)</h2>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #ef2929;">rddToPar</span> (<span style="color: #18b2b2;">DataRDD</span> dict bs) <span style="color: #ff8700;">=</span> mapM blockPar bs
+  <span style="color: #00af00;">where</span>
+    blockPar p <span style="color: #ff8700;">=</span> <span style="color: #00af00;">do</span>
+      i <span style="color: #ff8700;">&lt;-</span> new
+      put i (t p)
+      return i
+</pre>
+</div>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline52">
+<h2 id="orgheadline52">Scheduler - Plan to Work Stealing Pattern</h2>
+<ul>
+<li>The plan is executed scheduling processes on different nodes.</li>
+<li>Each node runs exactly one process at a time</li>
+<li>The data can be held by 'Block' processes</li>
+<li>The processes communicate with each other with 'NIVar' which allows sharing the data.</li>
+
+</ul>
+
+
+<p>
+Basically
+</p>
+<div class="org-src-container">
+
+<pre  class="src src-haskell"><span style="color: #00af00;">proc</span> <span style="color: #ff8700;">::</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Closure</span> (<span style="color: #18b2b2;">Process</span> b)
+<span style="color: #00af00;">proc</span> <span style="color: #ff8700;">=</span> <span style="color: #00af00;">_</span>
+
+<span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">should be converted into</span>
+<span style="color: #ef2929;">procSpawn</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">NIVar</span> a <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Closure</span> (<span style="color: #18b2b2;">Process</span> (<span style="color: #18b2b2;">NIVar</span> b))
+<span style="color: #ef2929;">procSpawn</span> <span style="color: #ff8700;">=</span> <span style="color: #00af00;">_</span>
+</pre>
+</div>
+
+<p>
+Essentially processes communicating using <b>NIVar</b>
+</p>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline53">
+<h2 id="orgheadline53">Possible to write custom scheduler</h2>
+<ul>
+<li>The scheduler is similar to driver</li>
+<li>It is possible to detect failures</li>
+
+</ul>
+
+</section>
+</section>
+<section>
+<section id="slide-orgheadline54">
+<h2 id="orgheadline54">References</h2>
 <ul>
 <li>Apache Spark - Original Research Paper from Berkley University
 <ul>
