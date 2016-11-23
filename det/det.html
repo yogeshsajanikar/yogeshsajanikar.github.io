@@ -26,12 +26,12 @@
 <body>
 <div class="reveal">
 <div class="slides">
-<section id="sec-title-slide"><h1 class="title">Deterministic Parallelism and Monad</h1><h2 class="author">Yogesh Sajanikar</h2><p class="date">Created: 2016-11-23 Wed 10:15</p>
+<section id="sec-title-slide"><h1 class="title">Deterministic Parallelism and Monad</h1><h2 class="author">Yogesh Sajanikar</h2><p class="date">Created: 2016-11-23 Wed 10:23</p>
 </section>
 
 <section>
-<section id="slide-orga1f2ba2">
-<h2 id="orga1f2ba2">Overview</h2>
+<section id="slide-org5178b84">
+<h2 id="org5178b84">Overview</h2>
 <p>
 <b>Functional Programming</b> and <b>Parallelism</b>
 </p>
@@ -48,8 +48,8 @@ A paradigm where
 </ul>
 
 </section>
-<section id="slide-orge7bb4ab">
-<h3 id="orge7bb4ab">Parallel Programming</h3>
+<section id="slide-orgd99ae28">
+<h3 id="orgd99ae28">Parallel Programming</h3>
 <p>
 Managing computation by distributing and executing processes simultaneously. 
 </p>
@@ -61,8 +61,8 @@ Managing computation by distributing and executing processes simultaneously.
 </div>
 
 </section>
-<section id="slide-org1927710">
-<h3 id="org1927710">Why Parallel Programming</h3>
+<section id="slide-orgfd42570">
+<h3 id="orgfd42570">Why Parallel Programming</h3>
 <p>
 Because <b>Free Lunch</b> is over&#x2026;
 (<a href="http://www.gotw.ca/publications/concurrency-ddj.htm">http://www.gotw.ca/publications/concurrency-ddj.htm</a> - Herb Sutter)
@@ -80,8 +80,8 @@ Moore's law no more valid&#x2026;
 
 
 </section>
-<section id="slide-orgfe3f535">
-<h3 id="orgfe3f535">Parallel Programming is Hard</h3>
+<section id="slide-org01d366f">
+<h3 id="org01d366f">Parallel Programming is Hard</h3>
 <ul>
 <li>Atomic operations</li>
 <li>Locks</li>
@@ -99,8 +99,8 @@ Why does it hang?
 </p>
 
 </section>
-<section id="slide-org482c8b0">
-<h3 id="org482c8b0">A FP model for Specifying Parallel Programs</h3>
+<section id="slide-orgd437670">
+<h3 id="orgd437670">A FP model for Specifying Parallel Programs</h3>
 <ul>
 <li>Separate "What" from "How"!</li>
 <li>Specify, Plan, Execute</li>
@@ -109,8 +109,8 @@ Why does it hang?
 
 
 </section>
-<section id="slide-org60112bb">
-<h3 id="org60112bb">Agenda</h3>
+<section id="slide-orgcb4dc5a">
+<h3 id="orgcb4dc5a">Agenda</h3>
 <ul>
 <li>FP, Monad</li>
 <li>Parallelism</li>
@@ -124,12 +124,12 @@ However, the paradigm is not restricted to FP languages. <i>One can apply it to 
 </section>
 </section>
 <section>
-<section id="slide-orgdf422b7">
-<h2 id="orgdf422b7">Functional Paradigm</h2>
-<div class="outline-text-2" id="text-orgdf422b7">
+<section id="slide-org9ed40ae">
+<h2 id="org9ed40ae">Functional Paradigm</h2>
+<div class="outline-text-2" id="text-org9ed40ae">
 </div></section>
-<section id="slide-org9748703">
-<h3 id="org9748703">Side effects</h3>
+<section id="slide-orgf1c3632">
+<h3 id="orgf1c3632">Side effects</h3>
 <div class="org-src-container">
 
 <pre  class="src src-cpp"><span style="color: #18b2b2;">int</span> <span style="color: #ef2929;">add</span>(<span style="color: #18b2b2;">int</span> <span style="color: #ff8700;">a</span>, <span style="color: #18b2b2;">int</span> *<span style="color: #ff8700;">b</span>) {
@@ -140,8 +140,8 @@ However, the paradigm is not restricted to FP languages. <i>One can apply it to 
 </div>
 
 </section>
-<section id="slide-org6ce4802">
-<h3 id="org6ce4802">Side effects</h3>
+<section id="slide-org00869b6">
+<h3 id="org00869b6">Side effects</h3>
 <div class="org-src-container">
 
 <pre  class="src src-cpp"><span style="color: #18b2b2;">int</span> <span style="color: #ef2929;">add</span>(<span style="color: #18b2b2;">int</span> <span style="color: #ff8700;">a</span>, <span style="color: #18b2b2;">int</span> *<span style="color: #ff8700;">b</span>) {
@@ -153,8 +153,8 @@ However, the paradigm is not restricted to FP languages. <i>One can apply it to 
 
 
 </section>
-<section id="slide-org2dafb51">
-<h3 id="org2dafb51">Functional Paradigm</h3>
+<section id="slide-org2fbdfa3">
+<h3 id="org2fbdfa3">Functional Paradigm</h3>
 <ul>
 <li>Immutability</li>
 <li>Persistence</li>
@@ -171,8 +171,8 @@ However, the paradigm is not restricted to FP languages. <i>One can apply it to 
 
 
 </section>
-<section id="slide-org021ac88">
-<h3 id="org021ac88">Call by name/value/normal form</h3>
+<section id="slide-org3f0ba19">
+<h3 id="org3f0ba19">Call by name/value/normal form</h3>
 <div class="org-src-container">
 
 <pre  class="src src-scheme">(<span style="color: #00af00;">define</span> (<span style="color: #ef2929;">square</span> x) (* x x))
@@ -189,8 +189,8 @@ However, the paradigm is not restricted to FP languages. <i>One can apply it to 
 </ul>
 
 </section>
-<section id="slide-orgff43d8f">
-<h3 id="orgff43d8f">Normal form - Laziness</h3>
+<section id="slide-org65d6888">
+<h3 id="org65d6888">Normal form - Laziness</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">main</span> <span style="color: #ff8700;">=</span> <span style="color: #00af00;">do</span>
@@ -205,8 +205,8 @@ What will <b>C++</b> or <b>Scala</b> do?
 </p>
 
 </section>
-<section id="slide-org9667f1c">
-<h3 id="org9667f1c">Function as first class value</h3>
+<section id="slide-org9340083">
+<h3 id="org9340083">Function as first class value</h3>
 <p>
 No difference between a <b>Function</b> and <b>Value</b>
 </p>
@@ -223,8 +223,8 @@ You can treat both square and <span class="underline">x</span> as value as well 
 </p>
 
 </section>
-<section id="slide-org9e2038d">
-<h3 id="org9e2038d">Immutability</h3>
+<section id="slide-org2ecb4dd">
+<h3 id="org2ecb4dd">Immutability</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">main</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">IO</span> <span style="color: #18b2b2;">()</span>
@@ -240,8 +240,8 @@ You can treat both square and <span class="underline">x</span> as value as well 
 </p>
 
 </section>
-<section id="slide-orgb571286">
-<h3 id="orgb571286">Immutability</h3>
+<section id="slide-org55aa37d">
+<h3 id="org55aa37d">Immutability</h3>
 <ul>
 <li>Functions are not allowed to modify values</li>
 <li>Cannot print values&#x2026; :-(</li>
@@ -265,8 +265,8 @@ Haskell will be happy to give a one page error.
 
 
 </section>
-<section id="slide-orgf634227">
-<h3 id="orgf634227">Determinism</h3>
+<section id="slide-org4a8800b">
+<h3 id="org4a8800b">Determinism</h3>
 <p>
 The above qualities <b>immutability</b>, <b>persistence</b>, and <b>function</b> gives determinism. 
 </p>
@@ -289,8 +289,8 @@ Looks like we have hit the recipe of parallel computation, as
 </section>
 </section>
 <section>
-<section id="slide-orgb522541">
-<h2 id="orgb522541">Monads</h2>
+<section id="slide-org1a38b36">
+<h2 id="org1a38b36">Monads</h2>
 <p>
 A <b>monad</b> (also triple, triad, standard construction and fundamental construction)[1] is an endofunctor (a functor mapping a category to itself), together with two natural transformations!
 </p>
@@ -300,8 +300,8 @@ Just scaring you&#x2026;
 </p>
 
 </section>
-<section id="slide-org7590e26">
-<h3 id="org7590e26">We use monads every day</h3>
+<section id="slide-org51ce272">
+<h3 id="org51ce272">We use monads every day</h3>
 <div class="org-src-container">
 
 <pre  class="src src-cpp"><span style="color: #18b2b2;">int</span> <span style="color: #ff8700;">x</span> = 10;
@@ -319,8 +319,8 @@ x <span style="color: #ff8700;">-&gt;</span> (x <span style="color: #ff8700;">-&
 </div>
 
 </section>
-<section id="slide-orga0cbf32">
-<h3 id="orga0cbf32">Haskell (writing monadic computations)</h3>
+<section id="slide-org0381dd7">
+<h3 id="org0381dd7">Haskell (writing monadic computations)</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #00af00;">let</span> z <span style="color: #ff8700;">=</span> pure 10 <span style="color: #ff8700;">&gt;&gt;=</span> <span style="color: #ff8700;">\</span>x <span style="color: #ff8700;">-&gt;</span> (x, x <span style="color: #ff8700;">+</span> 10) <span style="color: #ff8700;">&gt;&gt;=</span> <span style="color: #ff8700;">\</span>(p,q) <span style="color: #ff8700;">-&gt;</span> p <span style="color: #ff8700;">+</span> q
@@ -345,8 +345,8 @@ And haskell will create the functional pipeline for you
 </p>
 
 </section>
-<section id="slide-org1c8276b">
-<h3 id="org1c8276b">Monad is a way to have side effect in haskell</h3>
+<section id="slide-org7706c7a">
+<h3 id="org7706c7a">Monad is a way to have side effect in haskell</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">main</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">IO</span> <span style="color: #18b2b2;">()</span> <span style="color: #b2b2b2; font-style: italic;">-- </span><span style="color: #b2b2b2; font-style: italic;">IO where I can have side effects</span>
@@ -362,8 +362,8 @@ And haskell will create the functional pipeline for you
 </ul>
 
 </section>
-<section id="slide-org3cb4d2a">
-<h3 id="org3cb4d2a">Monad defined</h3>
+<section id="slide-orgaff12a9">
+<h3 id="orgaff12a9">Monad defined</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #00af00;">class</span> <span style="color: #18b2b2;">Monad</span> m <span style="color: #00af00;">where</span>
@@ -388,12 +388,12 @@ And haskell will create the functional pipeline for you
 </section>
 </section>
 <section>
-<section id="slide-orgfe20d06">
-<h2 id="orgfe20d06">Parallelism</h2>
-<div class="outline-text-2" id="text-orgfe20d06">
+<section id="slide-org0b888c7">
+<h2 id="org0b888c7">Parallelism</h2>
+<div class="outline-text-2" id="text-org0b888c7">
 </div></section>
-<section id="slide-org0938859">
-<h3 id="org0938859">Fibonacci Number Calculator</h3>
+<section id="slide-org79a2829">
+<h3 id="org79a2829">Fibonacci Number Calculator</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">fib</span> n <span style="color: #ff8700;">=</span> fib (n<span style="color: #ff8700;">-</span>1) <span style="color: #ff8700;">+</span> fib (n<span style="color: #ff8700;">-</span>2)
@@ -409,8 +409,8 @@ And haskell will create the functional pipeline for you
 
 
 </section>
-<section id="slide-org648d3b5">
-<h3 id="org648d3b5">Fibonacy - Monadic Calculator</h3>
+<section id="slide-orgbf3fb38">
+<h3 id="orgbf3fb38">Fibonacy - Monadic Calculator</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">fib</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Integer</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">IO</span> <span style="color: #18b2b2;">Integer</span>
@@ -431,8 +431,8 @@ And haskell will create the functional pipeline for you
 
 
 </section>
-<section id="slide-org6c5c05f">
-<h3 id="org6c5c05f">Rules</h3>
+<section id="slide-org5a7b7f9">
+<h3 id="org5a7b7f9">Rules</h3>
 <ul>
 <li>Pass <i>unevaluated computation</i> to monad</li>
 <li>Ensure that result is not immediately required</li>
@@ -442,8 +442,8 @@ And haskell will create the functional pipeline for you
 
 
 </section>
-<section id="slide-orgd2dd92a">
-<h3 id="orgd2dd92a">Continuation Monad</h3>
+<section id="slide-org1d299db">
+<h3 id="org1d299db">Continuation Monad</h3>
 <p>
 Continuation can simply be defined as
 </p>
@@ -464,8 +464,8 @@ Essentially, we can compose a way to trace all the steps, and use them for sched
 </p>
 
 </section>
-<section id="slide-org6dafc74">
-<h3 id="org6dafc74">Continuation as <span class="underline">Hole</span> (callback ..)</h3>
+<section id="slide-orgf8752b0">
+<h3 id="orgf8752b0">Continuation as <span class="underline">Hole</span> (callback ..)</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">userCallbacks</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Hole</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Continuation</span> <span style="color: #18b2b2;">()</span> a
@@ -479,8 +479,8 @@ Essentially, we can compose a way to trace all the steps, and use them for sched
 </div>
 
 </section>
-<section id="slide-org7394182">
-<h3 id="org7394182"><span class="underline">Hole</span> as possible thread candidate</h3>
+<section id="slide-orgd0d655b">
+<h3 id="orgd0d655b"><span class="underline">Hole</span> as possible thread candidate</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">Plan</span> <span style="color: #ff8700;">::</span> <span style="color: #ff8700;">*</span> <span style="color: #00af00;">where</span>
@@ -494,8 +494,8 @@ Essentially, we can compose a way to trace all the steps, and use them for sched
 
 
 </section>
-<section id="slide-orgcca52e2">
-<h3 id="orgcca52e2">Fibonacci Calculator</h3>
+<section id="slide-org6a505a7">
+<h3 id="org6a505a7">Fibonacci Calculator</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">fib</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Integer</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">Plan</span> 
@@ -528,8 +528,8 @@ Effectively we have transformed our program from just doing calculation to
 
 
 </section>
-<section id="slide-org97f6f58">
-<h3 id="org97f6f58">Execution</h3>
+<section id="slide-org4636520">
+<h3 id="org4636520">Execution</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">runCalculation</span> <span style="color: #ff8700;">::</span> <span style="color: #18b2b2;">Plan</span> <span style="color: #ff8700;">-&gt;</span> (<span style="color: #18b2b2;">Plan</span> <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">IO</span> <span style="color: #18b2b2;">()</span>) <span style="color: #ff8700;">-&gt;</span> <span style="color: #18b2b2;">IO</span> <span style="color: #18b2b2;">()</span>
@@ -538,17 +538,29 @@ Effectively we have transformed our program from just doing calculation to
 </div>
 
 </section>
-<section id="slide-org4a660fc">
-<h3 id="org4a660fc">Single Threaded Execution</h3>
+<section id="slide-org85b9fa1">
+<h3 id="org85b9fa1">Single Threaded Execution</h3>
+<ul>
+<li>Run all calculations without scheduling</li>
+<li>Create stack, push-pop</li>
+
+</ul>
 
 </section>
-<section id="slide-org503aa9c">
-<h3 id="org503aa9c">Multi-threaded Execution</h3>
+<section id="slide-orgada84fe">
+<h3 id="orgada84fe">Multi-threaded Execution</h3>
 
 <div class="figure">
 <p><img src="execution.png" alt="execution.png" />
 </p>
 </div>
+
+<ul>
+<li>The plan is executes scheduling processes on different threads.</li>
+<li>Each thread runs exactly one process at a time</li>
+<li>Once completed, the scheduler <b>steals</b> process and shedules it on another</li>
+
+</ul>
 </section>
 </section>
 </div>
