@@ -1,7 +1,7 @@
 #+STARTUP: hidestars overview
 #+TITLE: hspark
 #+AUTHOR: Yogesh Sajanikar
-#+EMAIL: 
+#+EMAIL: yogesh_sajanikar@yahoo.com
 #+REVEAL_ROOT: http://cdn.jsdelivr.net/reveal.js/3.0.0/
 #+REVEAL_THEME: night
 #+OPTIONS: num:nil
@@ -12,6 +12,7 @@
     - Distributed, in-memory computation 
     - Simple Map-Reduce over networked nodes
     - Loosely based on Spark
+  + https://github.com/yogeshsajanikar/hspark
 
 ** Agenda
 
@@ -30,8 +31,8 @@
 ** Intention 
    - Target audience - for Beginner to Intermediate
    - Understand haskell ecosystem
-   - Understand challenges 
-
+   - Understand challenges
+   - Provide inspiration for writing better distributed programs
 
 * Understanding Apache Spark
 
@@ -426,7 +427,6 @@
                                , _tdict :: Static (SerializableDict [c])
                                }
   #+end_src
-
 ** Implementation
    #+begin_src haskell
      instance (RDD a b, Serializable c) => RDD (MapRDD a b) c where
@@ -442,7 +442,6 @@
 
            return $ Blocks $ M.fromList (zip [0..] mpids)
    #+end_src 
-
 
 * Reduce RDD 
 
@@ -559,20 +558,22 @@
 
 * Monad-Par Library
   Monad par library uses continuation to specify parallelization, and deterministically compute it.
-
-  #+begin_src haskell
-    fib n = do
-      i <- new
-      j <- new
-      put i (fib (n-1))
-      put j (fib (n-2))
-      x <- get i
-      y <- get j
-      return x + y
-  #+end_src
-
-  One can use fork to specify using a different context.
-
+** Example
+   #+begin_src haskell
+     fib n = do
+       i <- new
+       j <- new
+       put i (fib (n-1))
+       put j (fib (n-2))
+       x <- get i
+       y <- get j
+       return x + y
+   #+end_src
+   One can use fork to specify using a different context.
+** Rules
+   + Pass /unevaluated computation/ to monad
+   + Ensure that result of the computation is not immediately required
+   + Result of the computation can be shared across
 * Specifying process tasks 
 
   #+begin_src haskell
@@ -624,6 +625,11 @@
   #+end_src 
 
   Essentially processes communicating using *NIVar*
+
+** NIVar - A networked IORef 
+   + It has a semantics of IORef
+   + However, NIVar will point to a process where data is stored
+   + NIVar can have reference to reference
 
 * Possible to write custom scheduler
   - The scheduler is similar to driver

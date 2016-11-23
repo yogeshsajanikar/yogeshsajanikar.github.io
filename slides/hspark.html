@@ -26,7 +26,7 @@
 <body>
 <div class="reveal">
 <div class="slides">
-<section id="sec-title-slide"><h1 class="title">hspark</h1><h2 class="author">Yogesh Sajanikar</h2><p class="date">Created: 2016-10-14 Fri 12:44</p>
+<section id="sec-title-slide"><h1 class="title">hspark</h1><h2 class="author">Yogesh Sajanikar</h2><p class="date">Created: 2016-10-14 Fri 16:00</p>
 </section>
 
 <section>
@@ -40,6 +40,7 @@
 <li>Loosely based on Spark</li>
 
 </ul></li>
+<li><a href="https://github.com/yogeshsajanikar/hspark">https://github.com/yogeshsajanikar/hspark</a></li>
 
 </ul>
 
@@ -74,9 +75,9 @@
 <li>Target audience - for Beginner to Intermediate</li>
 <li>Understand haskell ecosystem</li>
 <li>Understand challenges</li>
+<li>Provide inspiration for writing better distributed programs</li>
 
 </ul>
-
 
 </section>
 </section>
@@ -686,7 +687,6 @@ a.k.a. "Dict Trick"
                            }
 </pre>
 </div>
-
 </section>
 <section id="slide-orgheadline37">
 <h3 id="orgheadline37">Implementation</h3>
@@ -706,7 +706,6 @@ a.k.a. "Dict Trick"
       return <span style="color: #ff8700;">$</span> <span style="color: #18b2b2;">Blocks</span> <span style="color: #ff8700;">$</span> M.fromList (zip [0<span style="color: #ff8700;">..</span>] mpids)
 </pre>
 </div>
-
 
 </section>
 </section>
@@ -893,12 +892,14 @@ Essentially, we can compose a way to trace all the steps, and use them for sched
 </section>
 </section>
 <section>
-<section id="slide-orgheadline48">
-<h2 id="orgheadline48">Monad-Par Library</h2>
+<section id="slide-orgheadline50">
+<h2 id="orgheadline50">Monad-Par Library</h2>
 <p>
 Monad par library uses continuation to specify parallelization, and deterministically compute it.
 </p>
-
+</section>
+<section id="slide-orgheadline48">
+<h3 id="orgheadline48">Example</h3>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">fib</span> n <span style="color: #ff8700;">=</span> <span style="color: #00af00;">do</span>
@@ -911,16 +912,23 @@ Monad par library uses continuation to specify parallelization, and deterministi
   return x <span style="color: #ff8700;">+</span> y
 </pre>
 </div>
-
 <p>
 One can use fork to specify using a different context.
 </p>
+</section>
+<section id="slide-orgheadline49">
+<h3 id="orgheadline49">Rules</h3>
+<ul>
+<li>Pass <i>unevaluated computation</i> to monad</li>
+<li>Ensure that result of the computation is not immediately required</li>
+<li>Result of the computation can be shared across</li>
 
+</ul>
 </section>
 </section>
 <section>
-<section id="slide-orgheadline49">
-<h2 id="orgheadline49">Specifying process tasks</h2>
+<section id="slide-orgheadline51">
+<h2 id="orgheadline51">Specifying process tasks</h2>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #00af00;">data</span> <span style="color: #18b2b2;">Plan</span> <span style="color: #ff8700;">::</span> <span style="color: #ff8700;">*</span> <span style="color: #00af00;">where</span>
@@ -935,8 +943,8 @@ One can use fork to specify using a different context.
 </section>
 </section>
 <section>
-<section id="slide-orgheadline50">
-<h2 id="orgheadline50">Specifying RDD</h2>
+<section id="slide-orgheadline52">
+<h2 id="orgheadline52">Specifying RDD</h2>
 <ul>
 <li>Using GADT to specify RDD</li>
 <li>This specifies RDD</li>
@@ -956,8 +964,8 @@ One can use fork to specify using a different context.
 </section>
 </section>
 <section>
-<section id="slide-orgheadline51">
-<h2 id="orgheadline51">Convert RDD to Plan (with continuation)</h2>
+<section id="slide-orgheadline53">
+<h2 id="orgheadline53">Convert RDD to Plan (with continuation)</h2>
 <div class="org-src-container">
 
 <pre  class="src src-haskell"><span style="color: #ef2929;">rddToPar</span> (<span style="color: #18b2b2;">DataRDD</span> dict bs) <span style="color: #ff8700;">=</span> mapM blockPar bs
@@ -972,8 +980,8 @@ One can use fork to specify using a different context.
 </section>
 </section>
 <section>
-<section id="slide-orgheadline52">
-<h2 id="orgheadline52">Scheduler - Plan to Work Stealing Pattern</h2>
+<section id="slide-orgheadline55">
+<h2 id="orgheadline55">Scheduler - Plan to Work Stealing Pattern</h2>
 <ul>
 <li>The plan is executed scheduling processes on different nodes.</li>
 <li>Each node runs exactly one process at a time</li>
@@ -1002,10 +1010,20 @@ Essentially processes communicating using <b>NIVar</b>
 </p>
 
 </section>
+<section id="slide-orgheadline54">
+<h3 id="orgheadline54">NIVar - A networked IORef</h3>
+<ul>
+<li>It has a semantics of IORef</li>
+<li>However, NIVar will point to a process where data is stored</li>
+<li>NIVar can have reference to reference</li>
+
+</ul>
+
+</section>
 </section>
 <section>
-<section id="slide-orgheadline53">
-<h2 id="orgheadline53">Possible to write custom scheduler</h2>
+<section id="slide-orgheadline56">
+<h2 id="orgheadline56">Possible to write custom scheduler</h2>
 <ul>
 <li>The scheduler is similar to driver</li>
 <li>It is possible to detect failures</li>
@@ -1015,8 +1033,8 @@ Essentially processes communicating using <b>NIVar</b>
 </section>
 </section>
 <section>
-<section id="slide-orgheadline54">
-<h2 id="orgheadline54">References</h2>
+<section id="slide-orgheadline57">
+<h2 id="orgheadline57">References</h2>
 <ul>
 <li>Apache Spark - Original Research Paper from Berkley University
 <ul>
