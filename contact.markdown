@@ -8,4 +8,4 @@ Problem Solving and opportunities...
 Touch points
 --------------
 
-* email - yogesh*underscore*sajanikar*at*yahoo*dot*com
+* email - yogesh*.underscore.*sajanikar*.at.*yahoo*.dot.*com
