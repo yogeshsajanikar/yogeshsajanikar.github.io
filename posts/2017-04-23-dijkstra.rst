@@ -1,0 +1,30 @@
+---
+title: Thinking and Writing
+---
+
+Today I was going through the legendary Edger W Dijkstra's home
+page. I need not say anything about his contributions and influences
+that he holds over generations of computer scientists to come. One can
+not but notice how prolific writer that he was. How comprehensive his
+writings were, and how carefully he would write his thoughts.
+
+Leslie Lamport in his book Specifying Systems quotes Guindon, *Writing
+is a nature's way of letting you know how sloppy your thinking is*.
+
+I have a reason to remember this quote and Dijkstra's extensive
+numbered EWDs. Recently, we have been discussing a lot about a product
+idea at my work. So much so that we had already spent about a year in
+discussing without much of an outcome. Probably we created dozens of
+power point presentations, small POCs, technical evaluations, but all
+of those could not conclude into anything that was useful in any
+sense.
+
+Then I started writing notes about what we have discussed and the way
+of communicating to different people in a very formal way. We still
+have a *powerpoint* and *discussion* culture, however, my perspective
+got clarified a lot, and many things that could not be said over a
+*powerpoint*, I could find myself writing in words.
+
+
+
+

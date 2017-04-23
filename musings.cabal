@@ -1,0 +1,21 @@
+name:                musings
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/yogeshsajanikar/musings#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Yogesh Sajanikar
+maintainer:          yogesh_sajanikar@yahoo.com
+copyright:           (c) Copyright 2016 All Rights Reserved
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+executable musings
+  main-is:             site.hs
+  default-language:    Haskell2010
+  ghc-options:         -threaded
+  build-depends:       base >= 4.7 && < 5,
+                       hakyll
